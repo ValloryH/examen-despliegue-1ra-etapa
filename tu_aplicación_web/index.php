@@ -69,6 +69,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         <div class="public-posts-section">
             <h2>Últimas Publicaciones</h2>
             <div class="posts-list" id="publicPostsList">
+                <div id="allPostsList"></div>
                 </div>
         </div>
 
