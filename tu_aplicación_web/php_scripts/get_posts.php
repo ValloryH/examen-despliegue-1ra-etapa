@@ -8,11 +8,11 @@ header('Content-Type: application/json');
 $response = ['success' => false, 'posts' => [], 'message' => ''];
 
 // Comprobar si el usuario está logueado
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+/* if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     $response['message'] = 'No autorizado. Por favor, inicie sesión.';
     echo json_encode($response);
     exit;
-}
+} */
 
 // Preparar la consulta SQL para obtener TODAS las publicaciones
 // Hacemos un JOIN con la tabla 'users' para obtener el nombre de usuario (author_username)

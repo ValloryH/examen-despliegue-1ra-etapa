@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const editUserModal = document.getElementById('editUserModal');
     const editUserForm = document.getElementById('editUserForm');
     const editUserMessage = document.getElementById('editUserMessage');
+    const publicPostsList = document.getElementById('publicPostsList');
 
     // Función para mostrar/ocultar pestañas
     window.showTab = (tabId) => {
@@ -87,6 +88,10 @@ document.addEventListener('DOMContentLoaded', () => {
             fetchUsers(); // Carga la lista de usuarios para el admin
         }
     };
+
+    if (publicPostsList) {
+        fetchAllPosts()
+    }
 
     // Carga inicial para la primera pestaña (Publicaciones de Todos)
     // Asegura que la pestaña "Publicaciones" se muestre y cargue al inicio
