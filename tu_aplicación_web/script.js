@@ -1,33 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // === Login/Register Page Logic ===
+    // --- Lógica para la página de Login/Registro (index.php) ---
+    // Si estás en la página de login/registro, ejecuta su lógica
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
-    const showRegisterButton = document.getElementById('showRegister');
-    const showLoginButton = document.getElementById('showLogin');
-    const loginFormWrapper = document.getElementById('login-form');
-    const registerFormWrapper = document.getElementById('register-form');
     const loginMessage = document.getElementById('loginMessage');
     const registerMessage = document.getElementById('registerMessage');
-
-    if (showRegisterButton) {
-        showRegisterButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            loginFormWrapper.style.display = 'none';
-            registerFormWrapper.style.display = 'block';
-            loginMessage.textContent = ''; // Clear messages
-            registerMessage.textContent = '';
-        });
-    }
-
-    if (showLoginButton) {
-        showLoginButton.addEventListener('click', (e) => {
-            e.preventDefault();
-            registerFormWrapper.style.display = 'none';
-            loginFormWrapper.style.display = 'block';
-            loginMessage.textContent = ''; // Clear messages
-            registerMessage.textContent = '';
-        });
-    }
 
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
@@ -42,9 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 loginMessage.className = 'message success';
                 loginMessage.textContent = data.message;
-                setTimeout(() => {
-                    window.location.href = 'home.php';
-                }, 1000);
+                window.location.href = 'home.php'; // Redirigir a home.php
             } else {
                 loginMessage.className = 'message error';
                 loginMessage.textContent = data.message;
@@ -55,15 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (registerForm) {
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const password = document.getElementById('registerPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-
-            if (password !== confirmPassword) {
-                registerMessage.className = 'message error';
-                registerMessage.textContent = 'Las contraseñas no coinciden.';
-                return;
-            }
-
             const formData = new FormData(registerForm);
             const response = await fetch('php_scripts/register.php', {
                 method: 'POST',
@@ -75,11 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 registerMessage.className = 'message success';
                 registerMessage.textContent = data.message;
                 registerForm.reset();
-                setTimeout(() => {
-                    loginFormWrapper.style.display = 'block';
-                    registerFormWrapper.style.display = 'none';
-                    registerMessage.textContent = '';
-                }, 2000);
             } else {
                 registerMessage.className = 'message error';
                 registerMessage.textContent = data.message;
@@ -87,8 +48,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // === Home Page Logic ===
-    const postsList = document.getElementById('postsList');
+    // --- Lógica para la página principal (home.php) ---
+    // Seleccionar los contenedores de las listas de publicaciones
+    const allPostsList = document.getElementById('allPostsList'); // Lista de TODAS las publicaciones
+    const myPostsList = document.getElementById('myPostsList');   // Lista de MIS publicaciones
     const createPostForm = document.getElementById('createPostForm');
     const createPostMessage = document.getElementById('createPostMessage');
     const editPostModal = document.getElementById('editPostModal');
@@ -99,57 +62,99 @@ document.addEventListener('DOMContentLoaded', () => {
     const editUserForm = document.getElementById('editUserForm');
     const editUserMessage = document.getElementById('editUserMessage');
 
-    // Function to show/hide tabs
+    // Función para mostrar/ocultar pestañas
     window.showTab = (tabId) => {
+        // Ocultar todas las secciones de contenido
         document.querySelectorAll('.tab-content').forEach(tab => {
             tab.classList.remove('active');
         });
+        // Desactivar todos los botones de pestaña
         document.querySelectorAll('.tab-button').forEach(button => {
             button.classList.remove('active');
         });
+
+        // Mostrar la sección de contenido seleccionada
         document.getElementById(tabId).classList.add('active');
+        // Activar el botón de la pestaña seleccionada
         document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`).classList.add('active');
 
-        // Load data when tab is opened
-        if (tabId === 'posts-section') {
-            fetchPosts();
+        // Cargar los datos específicos de cada pestaña cuando se abre
+        if (tabId === 'all-posts-section') {
+            fetchAllPosts(); // Carga todas las publicaciones
+        } else if (tabId === 'my-posts-section') {
+            fetchMyPosts(); // Carga solo las publicaciones del usuario actual
         } else if (tabId === 'admin-section') {
-            fetchUsers();
+            fetchUsers(); // Carga la lista de usuarios para el admin
         }
     };
 
-    // Initial load for the first active tab (Publicaciones)
-    if (document.getElementById('posts-section')) {
-        showTab('posts-section');
+    // Carga inicial para la primera pestaña (Publicaciones de Todos)
+    // Asegura que la pestaña "Publicaciones" se muestre y cargue al inicio
+    if (document.getElementById('all-posts-section')) {
+        showTab('all-posts-section');
     }
 
-    // --- Posts Section Functions ---
+    // --- Funciones para manejar Publicaciones ---
 
-    async function fetchPosts() {
-        const response = await fetch('php_scripts/get_posts.php');
+    // Función para obtener y mostrar TODAS las publicaciones
+    async function fetchAllPosts() {
+        if (!allPostsList) return; // Asegurarse de que el elemento existe
+
+        const response = await fetch('php_scripts/get_posts.php'); // Llama al script que trae TODAS las publicaciones
         const data = await response.json();
-        postsList.innerHTML = ''; // Clear current posts
+        allPostsList.innerHTML = ''; // Limpiar la lista actual de publicaciones
 
         if (data.success && data.posts.length > 0) {
             data.posts.forEach(post => {
                 const postItem = document.createElement('div');
                 postItem.className = 'post-item';
+                // HTML para cada publicación, mostrando el autor. SIN botones de editar/eliminar.
                 postItem.innerHTML = `
-                    <h3>${post.title}</h3>
-                    <p>${post.content}</p>
-                    ${post.image_path ? `<img src="${post.image_path}" alt="Post Image">` : ''}
-                    <div class="post-actions">
-                        <button class="edit-btn" onclick="openEditPostModal(${post.id}, '${escapeHtml(post.title)}', '${escapeHtml(post.content)}', '${post.image_path || ''}')">Editar</button>
-                        <button class="delete-btn" onclick="deletePost(${post.id})">Eliminar</button>
-                    </div>
+                    <h3>${escapeHtml(post.title)}</h3>
+                    <p>Por: <strong>${escapeHtml(post.author_username)}</strong></p>
+                    <p>${escapeHtml(post.content)}</p>
+                    ${post.image_path ? `<img src="${escapeHtml(post.image_path)}" alt="Imagen de Publicación">` : ''}
+                    <small>Publicado: ${post.created_at}</small>
                 `;
-                postsList.appendChild(postItem);
+                allPostsList.appendChild(postItem);
             });
         } else {
-            postsList.innerHTML = '<p>No hay publicaciones aún.</p>';
+            allPostsList.innerHTML = '<p>No hay publicaciones para mostrar.</p>';
         }
     }
 
+    // Función para obtener y mostrar SOLO las publicaciones del usuario actual
+    async function fetchMyPosts() {
+        if (!myPostsList) return; // Asegurarse de que el elemento existe
+
+        const response = await fetch('php_scripts/get_my_posts.php'); // Llama al script que trae SOLO MIS publicaciones
+        const data = await response.json();
+        myPostsList.innerHTML = ''; // Limpiar la lista actual de publicaciones
+
+        if (data.success && data.posts.length > 0) {
+            data.posts.forEach(post => {
+                const postItem = document.createElement('div');
+                postItem.className = 'post-item';
+                // HTML para cada publicación, incluyendo botones de editar/eliminar
+                postItem.innerHTML = `
+                    <h3>${escapeHtml(post.title)}</h3>
+                    <p>${escapeHtml(post.content)}</p>
+                    ${post.image_path ? `<img src="${escapeHtml(post.image_path)}" alt="Imagen de Publicación">` : ''}
+                    <small>Publicado: ${post.created_at}</small>
+                    <div class="post-actions">
+                        <button class="edit-btn" onclick="openEditPostModal(${post.id}, '${escapeHtml(post.title)}', '${escapeHtml(post.content)}', '${escapeHtml(post.image_path || '')}')">Editar</button>
+                        <button class="delete-btn" onclick="deletePost(${post.id})">Eliminar</button>
+                    </div>
+                `;
+                myPostsList.appendChild(postItem);
+            });
+        } else {
+            myPostsList.innerHTML = '<p>No tienes publicaciones aún.</p>';
+        }
+    }
+
+
+    // Lógica para crear una publicación
     if (createPostForm) {
         createPostForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -163,8 +168,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 createPostMessage.className = 'message success';
                 createPostMessage.textContent = data.message;
-                createPostForm.reset();
-                fetchPosts(); // Refresh posts
+                createPostForm.reset(); // Limpiar el formulario
+                fetchAllPosts(); // Refrescar la lista de TODAS las publicaciones
+                // Si el usuario está en la pestaña "Mis Publicaciones", también refrescar esa lista
+                if (document.getElementById('my-posts-section').classList.contains('active')) {
+                    fetchMyPosts();
+                }
             } else {
                 createPostMessage.className = 'message error';
                 createPostMessage.textContent = data.message;
@@ -172,20 +181,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Lógica para abrir el modal de edición de publicación
     window.openEditPostModal = (id, title, content, imagePath) => {
         document.getElementById('editPostId').value = id;
         document.getElementById('editPostTitle').value = title;
         document.getElementById('editPostContent').value = content;
-        const currentImageNameElement = document.getElementById('currentImageName');
-        if (imagePath) {
-            const fileName = imagePath.split('/').pop();
-            currentImageNameElement.textContent = `Imagen actual: ${fileName}`;
-        } else {
-            currentImageNameElement.textContent = 'No hay imagen actual.';
-        }
+        document.getElementById('currentImageName').textContent = imagePath ? `Imagen actual: ${imagePath.split('/').pop()}` : 'No hay imagen actual';
         editPostModal.style.display = 'block';
     };
 
+    // Lógica para enviar el formulario de edición de publicación
     if (editPostForm) {
         editPostForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -201,8 +206,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 editPostMessage.textContent = data.message;
                 setTimeout(() => {
                     closeModal('editPostModal');
-                    fetchPosts(); // Refresh posts
-                    editPostMessage.textContent = '';
+                    fetchAllPosts(); // Refrescar TODAS las publicaciones
+                    fetchMyPosts(); // Refrescar MIS publicaciones
+                    editPostMessage.textContent = ''; // Limpiar mensaje después de cerrar modal
                 }, 1500);
             } else {
                 editPostMessage.className = 'message error';
@@ -211,6 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Lógica para eliminar una publicación
     window.deletePost = async (id) => {
         if (confirm('¿Estás seguro de que quieres eliminar esta publicación?')) {
             const response = await fetch('php_scripts/delete_post.php', {
@@ -224,38 +231,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.success) {
                 alert(data.message);
-                fetchPosts(); // Refresh posts
+                fetchAllPosts(); // Refrescar TODAS las publicaciones
+                fetchMyPosts(); // Refrescar MIS publicaciones
             } else {
                 alert(data.message);
             }
         }
     };
 
-    // --- User Admin Section Functions ---
 
+    // --- Funciones para el Administrador de Usuarios (Si aplica) ---
+    // Asegúrate de que estas funciones existan si tienes la sección de administración
+    // (Mantener el código de fetchUsers, openEditUserModal, editUserForm, deleteUser como lo tenías)
     async function fetchUsers() {
+        if (!usersList) return; // Asegurarse de que el elemento existe
         const response = await fetch('php_scripts/get_users.php');
         const data = await response.json();
-        usersList.innerHTML = ''; // Clear current users
+        usersList.innerHTML = '';
 
         if (data.success && data.users.length > 0) {
             data.users.forEach(user => {
                 const userItem = document.createElement('div');
                 userItem.className = 'user-item';
                 userItem.innerHTML = `
-                    <div class="user-info">
-                        <p><strong>ID:</strong> ${user.id}</p>
-                        <p><strong>Usuario:</strong> ${user.username}</p>
-                        <p><strong>Email:</strong> ${user.email}</p>
-                    </div>
+                    <h3>${escapeHtml(user.username)}</h3>
+                    <p>Email: ${escapeHtml(user.email)}</p>
                     <div class="user-actions">
-                        <button onclick="openEditUserModal(${user.id}, '${escapeHtml(user.username)}', '${escapeHtml(user.email)}')">Editar</button>
+                        <button class="edit-btn" onclick="openEditUserModal(${user.id}, '${escapeHtml(user.username)}', '${escapeHtml(user.email)}')">Editar</button>
+                        <button class="delete-btn" onclick="deleteUser(${user.id})">Eliminar</button>
                     </div>
                 `;
                 usersList.appendChild(userItem);
             });
         } else {
-            usersList.innerHTML = '<p>No hay usuarios registrados aún.</p>';
+            usersList.innerHTML = '<p>No hay usuarios para mostrar.</p>';
         }
     }
 
@@ -281,7 +290,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 editUserMessage.textContent = data.message;
                 setTimeout(() => {
                     closeModal('editUserModal');
-                    fetchUsers(); // Refresh users
+                    fetchUsers();
                     editUserMessage.textContent = '';
                 }, 1500);
             } else {
@@ -291,25 +300,42 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- General Modal Close Function ---
-    window.closeModal = (modalId) => {
-        document.getElementById(modalId).style.display = 'none';
-        if (modalId === 'editPostModal') {
-            editPostMessage.textContent = ''; // Clear messages on close
-        } else if (modalId === 'editUserModal') {
-            editUserMessage.textContent = ''; // Clear messages on close
+    window.deleteUser = async (id) => {
+        if (confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+            const response = await fetch('php_scripts/delete_user.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_id: id })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message);
+                fetchUsers();
+            } else {
+                alert(data.message);
+            }
         }
     };
 
-    // Helper to escape HTML entities
+
+    // --- Funciones Generales ---
+
+    // Función para cerrar cualquier modal
+    window.closeModal = (modalId) => {
+        document.getElementById(modalId).style.display = 'none';
+        // Limpiar mensajes al cerrar modal (opcional, pero buena práctica)
+        if (modalId === 'editPostModal' && editPostMessage) editPostMessage.textContent = '';
+        if (modalId === 'editUserModal' && editUserMessage) editUserMessage.textContent = '';
+    };
+
+    // Función de utilidad para escapar HTML (previene XSS)
     function escapeHtml(text) {
-        const map = {
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        };
-        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        const div = document.createElement('div');
+        div.appendChild(document.createTextNode(text));
+        return div.innerHTML;
     }
+
 });

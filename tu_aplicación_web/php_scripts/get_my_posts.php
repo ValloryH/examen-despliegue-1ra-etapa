@@ -1,5 +1,5 @@
 <?php
-// get_posts.php
+// get_my_posts.php
 session_start();
 require_once '../config.php';
 
@@ -14,10 +14,12 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     exit;
 }
 
-// Preparar la consulta SQL para obtener TODAS las publicaciones
-// Hacemos un JOIN con la tabla 'users' para obtener el nombre de usuario (author_username)
-// y el user_id de la publicación (p.user_id) para que JavaScript sepa quién la escribió.
-$stmt = $mysqli->prepare("SELECT p.id, p.user_id, p.title, p.content, p.image_path, p.created_at, u.username AS author_username FROM posts p JOIN users u ON p.user_id = u.id ORDER BY p.created_at DESC");
+// Obtener el ID del usuario de la sesión
+$user_id = $_SESSION['id'];
+
+// Preparar la consulta SQL para obtener SOLO las publicaciones de este usuario
+$stmt = $mysqli->prepare("SELECT id, user_id, title, content, image_path, created_at FROM posts WHERE user_id = ? ORDER BY created_at DESC");
+$stmt->bind_param("i", $user_id); // Filtrar por el ID del usuario
 
 // Ejecutar la consulta
 $stmt->execute();
