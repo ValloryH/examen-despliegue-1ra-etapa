@@ -1,8 +1,8 @@
 <?php
-// Inicia la sesión PHP al principio de la página
+// home.php
 session_start();
 
-// Si el usuario no está logueado, redirigir a la página de inicio de sesión
+// Si el usuario NO está logueado, redirigir a index.php
 if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
     header('Location: index.php');
     exit;
@@ -113,11 +113,6 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
             </div>
         </div>
 
-    </div> <script>
-        // Esta línea es CRUCIAL para que JavaScript sepa el ID del usuario actual
-        // La usaremos en script.js para decidir qué botones mostrar.
-        const currentUserId = <?php echo isset($_SESSION['id']) ? $_SESSION['id'] : 'null'; ?>;
-    </script>
-    <script src="script.js"></script>
+    </div> <script src="script.js"></script>
 </body>
 </html>
