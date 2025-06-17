@@ -7,7 +7,18 @@ body {
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
+
+    background: linear-gradient(270deg, #0369a1, #facc15, #0369a1, #facc15);
+  background-size: 800% 800%;
+  animation: gradientShift 20s ease infinite;
+
 }
+
+        
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }}
 
 .header {
     background-color: #002a3f;
