@@ -23,11 +23,19 @@ body {
     box-sizing: border-box;
 }
 
+
+#encabezadotitulo{
+    color: yellow;
+}
+
+
 .header h1 {
     margin: 0;
     font-size: 24px;
 }
 
+
+h1
 .header p {
     margin: 0;
     font-size: 16px;

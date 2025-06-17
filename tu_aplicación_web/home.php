@@ -15,7 +15,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 </head>
 <body>
     <div class="header">
-        <h1>Prueba para examen</h1>
+        <h1 id="encabezadotitulo"  >Colegio Técnico Privado IDT</h1>
         <p>Bienvenido, <?php echo htmlspecialchars($_SESSION['username']); ?>!</p>
         <a href="php_scripts/logout.php" class="logout-btn">Cerrar Sesión</a>
     </div>
