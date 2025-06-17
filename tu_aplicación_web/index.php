@@ -18,7 +18,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 </head>
 <body>
     <div class="header">
-        <h1>Bienvenido a Nuestra Plataforma</h1>
+        <h1>Bienvenido a Nuestra Plataforma del Colegio Técnico Privado IDT</h1>
         <p>Explora las publicaciones o inicia sesión/regístrate.</p>
     </div>
 
