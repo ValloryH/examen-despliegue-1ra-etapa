@@ -1,8 +1,8 @@
 <?php
 // config.php
 define('DB_SERVER', 'localhost');
-define('DB_USERNAME', 'root'); // Usuario por defecto de XAMPP/WAMP
-define('DB_PASSWORD', '');     // Contraseña vacía por defecto de XAMPP/WAMP
+define('DB_USERNAME', 'u178928053_jime_hugo'); // Usuario por defecto de XAMPP/WAMP
+define('DB_PASSWORD', '@1#f7yeS');     // Contraseña vacía por defecto de XAMPP/WAMP
 define('DB_NAME', 'u178928053_examen_jh'); 
 
 // Intentar conectar a la base de datos MySQL
