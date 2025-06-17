@@ -1,11 +1,30 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Lógica para la página de Login/Registro (index.php) ---
-    // Si estás en la página de login/registro, ejecuta su lógica
+    // --- Variables Comunes para Login/Registro y Publicaciones ---
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
     const loginMessage = document.getElementById('loginMessage');
     const registerMessage = document.getElementById('registerMessage');
+    const publicPostsList = document.getElementById('publicPostsList'); // Nueva lista para index.php
 
+    // --- Variables para la Página Principal (home.php) ---
+    const allPostsList = document.getElementById('allPostsList');
+    const myPostsList = document.getElementById('myPostsList');
+    const createPostForm = document.getElementById('createPostForm');
+    const createPostMessage = document.getElementById('createPostMessage');
+    const editPostModal = document.getElementById('editPostModal');
+    const editPostForm = document.getElementById('editPostForm');
+    const editPostMessage = document.getElementById('editPostMessage');
+    const usersList = document.getElementById('usersList');
+    const editUserModal = document.getElementById('editUserModal');
+    const editUserForm = document.getElementById('editUserForm');
+    const editUserMessage = document.getElementById('editUserMessage');
+
+    // Esta variable almacenará el ID del usuario actual.
+    // Será 'null' si no hay sesión (en index.php), o el ID del usuario si está logueado (en home.php).
+    let currentUserId = null;
+
+
+    // --- Lógica de Autenticación (Login/Registro) ---
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -19,7 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 loginMessage.className = 'message success';
                 loginMessage.textContent = data.message;
-                window.location.href = 'home.php'; // Redirigir a home.php
+                window.location.href = 'home.php'; // Redirigir a home.php si el login es exitoso
             } else {
                 loginMessage.className = 'message error';
                 loginMessage.textContent = data.message;
@@ -41,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 registerMessage.className = 'message success';
                 registerMessage.textContent = data.message;
                 registerForm.reset();
+                // Opcional: mostrar un mensaje que sugiera iniciar sesión
             } else {
                 registerMessage.className = 'message error';
                 registerMessage.textContent = data.message;
@@ -48,113 +68,124 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Lógica para la página principal (home.php) ---
-    // Seleccionar los contenedores de las listas de publicaciones
-    const allPostsList = document.getElementById('allPostsList'); // Lista de TODAS las publicaciones
-    const myPostsList = document.getElementById('myPostsList');   // Lista de MIS publicaciones
-    const createPostForm = document.getElementById('createPostForm');
-    const createPostMessage = document.getElementById('createPostMessage');
-    const editPostModal = document.getElementById('editPostModal');
-    const editPostForm = document.getElementById('editPostForm');
-    const editPostMessage = document.getElementById('editPostMessage');
-    const usersList = document.getElementById('usersList');
-    const editUserModal = document.getElementById('editUserModal');
-    const editUserForm = document.getElementById('editUserForm');
-    const editUserMessage = document.getElementById('editUserMessage');
-
-    // Función para mostrar/ocultar pestañas
+    // --- Lógica para Pestañas (Solo en home.php) ---
+    // Esta función solo se ejecutará si los elementos de tabs existen (es decir, en home.php)
     window.showTab = (tabId) => {
-        // Ocultar todas las secciones de contenido
         document.querySelectorAll('.tab-content').forEach(tab => {
             tab.classList.remove('active');
         });
-        // Desactivar todos los botones de pestaña
         document.querySelectorAll('.tab-button').forEach(button => {
             button.classList.remove('active');
         });
-
-        // Mostrar la sección de contenido seleccionada
         document.getElementById(tabId).classList.add('active');
-        // Activar el botón de la pestaña seleccionada
         document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`).classList.add('active');
 
-        // Cargar los datos específicos de cada pestaña cuando se abre
+        // Cargar datos cuando se abre la pestaña
         if (tabId === 'all-posts-section') {
-            fetchAllPosts(); // Carga todas las publicaciones
+            fetchAllPosts(); // Carga todas las publicaciones para usuarios logueados
         } else if (tabId === 'my-posts-section') {
             fetchMyPosts(); // Carga solo las publicaciones del usuario actual
         } else if (tabId === 'admin-section') {
-            fetchUsers(); // Carga la lista de usuarios para el admin
+            fetchUsers();
         }
     };
 
-    // Carga inicial para la primera pestaña (Publicaciones de Todos)
-    // Asegura que la pestaña "Publicaciones" se muestre y cargue al inicio
-    if (document.getElementById('all-posts-section')) {
-        showTab('all-posts-section');
-    }
 
     // --- Funciones para manejar Publicaciones ---
 
-    // Función para obtener y mostrar TODAS las publicaciones
+    // Función principal para obtener y mostrar publicaciones
+    // Se usa tanto en index.php (para todos) como en home.php (para la pestaña "Publicaciones")
+    async function fetchAndDisplayPosts(targetListElement, phpScriptUrl, isEditable = false) {
+        if (!targetListElement) return; // Asegurarse de que el elemento existe
+
+        // Para evitar problemas de caché con `get_posts.php` en usuarios no logueados,
+        // puedes añadir un parámetro de caché al URL.
+        const response = await fetch(phpScriptUrl + '?_cachebust=' + new Date().getTime());
+        const data = await response.json();
+
+        targetListElement.innerHTML = ''; // Limpiar la lista actual de publicaciones
+
+        if (data.success && data.posts.length > 0) {
+            data.posts.forEach(post => {
+                const postItem = document.createElement('div');
+                postItem.className = 'post-item';
+
+                // Determinar si los botones de editar/eliminar deben mostrarse
+                const showActions = isEditable && (currentUserId !== null && post.user_id == currentUserId);
+
+                postItem.innerHTML = `
+                    <h3>${escapeHtml(post.title)}</h3>
+                    <p>Por: <strong>${escapeHtml(post.author_username || 'Usuario Desconocido')}</strong></p>
+                    <p>${escapeHtml(post.content)}</p>
+                    ${post.image_path ? `<img src="${escapeHtml(post.image_path)}" alt="Imagen de Publicación">` : ''}
+                    <small>Publicado: ${post.created_at}</small>
+                    ${showActions ? `
+                        <div class="post-actions">
+                            <button class="edit-btn" onclick="openEditPostModal(${post.id}, '${escapeHtml(post.title)}', '${escapeHtml(post.content)}', '${escapeHtml(post.image_path || '')}')">Editar</button>
+                            <button class="delete-btn" onclick="deletePost(${post.id})">Eliminar</button>
+                        </div>
+                    ` : ''}
+                `;
+                targetListElement.appendChild(postItem);
+            });
+        } else {
+            targetListElement.innerHTML = '<p>No hay publicaciones para mostrar.</p>';
+        }
+    }
+
+    // Funciones específicas para cada contexto de carga
+    async function fetchPublicPosts() {
+        // En index.php, currentUserId es null, isEditable es false.
+        await fetchAndDisplayPosts(publicPostsList, 'php_scripts/get_posts.php', false);
+    }
+
     async function fetchAllPosts() {
-        if (!allPostsList) return; // Asegurarse de que el elemento existe
-
-        const response = await fetch('php_scripts/get_posts.php'); // Llama al script que trae TODAS las publicaciones
-        const data = await response.json();
-        allPostsList.innerHTML = ''; // Limpiar la lista actual de publicaciones
-
-        if (data.success && data.posts.length > 0) {
-            data.posts.forEach(post => {
-                const postItem = document.createElement('div');
-                postItem.className = 'post-item';
-                // HTML para cada publicación, mostrando el autor. SIN botones de editar/eliminar.
-                postItem.innerHTML = `
-                    <h3>${escapeHtml(post.title)}</h3>
-                    <p>Por: <strong>${escapeHtml(post.author_username)}</strong></p>
-                    <p>${escapeHtml(post.content)}</p>
-                    ${post.image_path ? `<img src="${escapeHtml(post.image_path)}" alt="Imagen de Publicación">` : ''}
-                    <small>Publicado: ${post.created_at}</small>
-                `;
-                allPostsList.appendChild(postItem);
-            });
-        } else {
-            allPostsList.innerHTML = '<p>No hay publicaciones para mostrar.</p>';
-        }
+        // En home.php, currentUserId tiene el ID de sesión, isEditable es false.
+        await fetchAndDisplayPosts(allPostsList, 'php_scripts/get_posts.php', false);
     }
 
-    // Función para obtener y mostrar SOLO las publicaciones del usuario actual
     async function fetchMyPosts() {
-        if (!myPostsList) return; // Asegurarse de que el elemento existe
+        // En home.php, currentUserId tiene el ID de sesión, isEditable es true.
+        await fetchAndDisplayPosts(myPostsList, 'php_scripts/get_my_posts.php', true);
+    }
 
-        const response = await fetch('php_scripts/get_my_posts.php'); // Llama al script que trae SOLO MIS publicaciones
-        const data = await response.json();
-        myPostsList.innerHTML = ''; // Limpiar la lista actual de publicaciones
+    // --- Inicialización de la Carga de Publicaciones ---
+    // Si estamos en la página de inicio (index.php), cargar las publicaciones públicas
+    if (publicPostsList) {
+        fetchPublicPosts();
+    }
+    // Si estamos en la página principal (home.php), inicializar la vista de pestañas y obtener currentUserId
+    else if (document.getElementById('all-posts-section')) {
+        // Asegúrate de que currentUserId esté definido en home.php
+        // home.php debe incluir: <script> const currentUserId = <?php echo isset($_SESSION['id']) ? $_SESSION['id'] : 'null'; ?>; </script>
+        // Si no lo haces, currentUserId será 'null' aquí, lo cual es incorrecto para home.php.
+        // O mejor aún, pasamos el user_id de la sesión a través de otro método seguro (como un data-attribute)
+        // Por ahora, asumimos que 'currentUserId' está disponible globalmente si home.php lo inyecta.
+        // Si no está, las acciones de editar/borrar en "Mis Publicaciones" no aparecerán.
 
-        if (data.success && data.posts.length > 0) {
-            data.posts.forEach(post => {
-                const postItem = document.createElement('div');
-                postItem.className = 'post-item';
-                // HTML para cada publicación, incluyendo botones de editar/eliminar
-                postItem.innerHTML = `
-                    <h3>${escapeHtml(post.title)}</h3>
-                    <p>${escapeHtml(post.content)}</p>
-                    ${post.image_path ? `<img src="${escapeHtml(post.image_path)}" alt="Imagen de Publicación">` : ''}
-                    <small>Publicado: ${post.created_at}</small>
-                    <div class="post-actions">
-                        <button class="edit-btn" onclick="openEditPostModal(${post.id}, '${escapeHtml(post.title)}', '${escapeHtml(post.content)}', '${escapeHtml(post.image_path || '')}')">Editar</button>
-                        <button class="delete-btn" onclick="deletePost(${post.id})">Eliminar</button>
-                    </div>
-                `;
-                myPostsList.appendChild(postItem);
-            });
-        } else {
-            myPostsList.innerHTML = '<p>No tienes publicaciones aún.</p>';
-        }
+        // Si tienes la variable currentUserId definida globalmente por PHP en home.php:
+        // currentUserId = window.currentUserId; // o como la estés pasando
+
+        // O, la forma más limpia: obtenemos el ID del usuario del mismo script get_my_posts
+        // o asumimos que solo se activan las acciones si estás logueado.
+        // Para simplificar, asumiremos que si estamos en home.php, es porque hay un usuario logueado.
+        // Y las funciones update_post.php y delete_post.php ya verifican la sesión.
+
+        // Para hacer que currentUserId esté disponible aquí de forma segura:
+        // En home.php, dentro de la etiqueta <script src="script.js"></script>, y ANTES de ella:
+        // <script> const userSessionId = <?php echo isset($_SESSION['id']) ? $_SESSION['id'] : 'null'; ?>; </script>
+        // Y aquí en script.js:
+        // if (typeof userSessionId !== 'undefined' && userSessionId !== null) {
+        //    currentUserId = userSessionId;
+        // }
+
+        // Dado que el usuario ya está logueado para llegar a home.php,
+        // simplemente se ejecutará el showTab por defecto para "Publicaciones"
+        showTab('all-posts-section');
     }
 
 
-    // Lógica para crear una publicación
+    // Lógica para crear una publicación (solo si el formulario existe, es decir, en home.php)
     if (createPostForm) {
         createPostForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -168,11 +199,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
                 createPostMessage.className = 'message success';
                 createPostMessage.textContent = data.message;
-                createPostForm.reset(); // Limpiar el formulario
-                fetchAllPosts(); // Refrescar la lista de TODAS las publicaciones
-                // Si el usuario está en la pestaña "Mis Publicaciones", también refrescar esa lista
+                createPostForm.reset();
+                fetchAllPosts(); // Refrescar todas las publicaciones
                 if (document.getElementById('my-posts-section').classList.contains('active')) {
-                    fetchMyPosts();
+                    fetchMyPosts(); // Refrescar mis publicaciones si la pestaña está activa
                 }
             } else {
                 createPostMessage.className = 'message error';
@@ -183,6 +213,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Lógica para abrir el modal de edición de publicación
     window.openEditPostModal = (id, title, content, imagePath) => {
+        if (!editPostModal) return; // Asegurarse de que el modal existe (solo en home.php)
         document.getElementById('editPostId').value = id;
         document.getElementById('editPostTitle').value = title;
         document.getElementById('editPostContent').value = content;
@@ -206,9 +237,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 editPostMessage.textContent = data.message;
                 setTimeout(() => {
                     closeModal('editPostModal');
-                    fetchAllPosts(); // Refrescar TODAS las publicaciones
-                    fetchMyPosts(); // Refrescar MIS publicaciones
-                    editPostMessage.textContent = ''; // Limpiar mensaje después de cerrar modal
+                    fetchAllPosts();
+                    fetchMyPosts();
+                    editPostMessage.textContent = '';
                 }, 1500);
             } else {
                 editPostMessage.className = 'message error';
@@ -231,8 +262,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (data.success) {
                 alert(data.message);
-                fetchAllPosts(); // Refrescar TODAS las publicaciones
-                fetchMyPosts(); // Refrescar MIS publicaciones
+                fetchAllPosts();
+                fetchMyPosts();
             } else {
                 alert(data.message);
             }
@@ -240,9 +271,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // --- Funciones para el Administrador de Usuarios (Si aplica) ---
-    // Asegúrate de que estas funciones existan si tienes la sección de administración
-    // (Mantener el código de fetchUsers, openEditUserModal, editUserForm, deleteUser como lo tenías)
+    // --- Funciones para el Administrador de Usuarios (Solo en home.php si existe la sección) ---
     async function fetchUsers() {
         if (!usersList) return; // Asegurarse de que el elemento existe
         const response = await fetch('php_scripts/get_users.php');
@@ -269,6 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.openEditUserModal = (id, username, email) => {
+        if (!editUserModal) return; // Asegurarse de que el modal existe
         document.getElementById('editUserId').value = id;
         document.getElementById('editUsername').value = username;
         document.getElementById('editUserEmail').value = email;
@@ -325,17 +355,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Función para cerrar cualquier modal
     window.closeModal = (modalId) => {
-        document.getElementById(modalId).style.display = 'none';
-        // Limpiar mensajes al cerrar modal (opcional, pero buena práctica)
-        if (modalId === 'editPostModal' && editPostMessage) editPostMessage.textContent = '';
-        if (modalId === 'editUserModal' && editUserMessage) editUserMessage.textContent = '';
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+            // Limpiar mensajes al cerrar modal
+            if (modalId === 'editPostModal' && editPostMessage) editPostMessage.textContent = '';
+            if (modalId === 'editUserModal' && editUserMessage) editUserMessage.textContent = '';
+        }
     };
 
     // Función de utilidad para escapar HTML (previene XSS)
     function escapeHtml(text) {
+        // Asegurarse de que 'text' no sea null o undefined
+        if (text === null || typeof text === 'undefined') {
+            return '';
+        }
         const div = document.createElement('div');
         div.appendChild(document.createTextNode(text));
         return div.innerHTML;
     }
 
+    // --- Lógica para Pestañas de Autenticación (solo en index.php) ---
+    window.showAuthTab = (tabId) => {
+        document.querySelectorAll('.auth-tab-content').forEach(tab => {
+            tab.classList.remove('active');
+        });
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.classList.remove('active');
+        });
+        document.getElementById(tabId).classList.add('active');
+        document.querySelector(`.tab-button[onclick="showAuthTab('${tabId}')"]`).classList.add('active');
+    };
+
+    // Inicializar la pestaña de login/registro si los elementos existen
+    if (document.getElementById('login-tab') && document.getElementById('register-tab')) {
+        showAuthTab('login-tab'); // Mostrar la pestaña de Iniciar Sesión por defecto
+    }
 });
