@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+
+
 -- Tabla de Publicaciones
 CREATE TABLE IF NOT EXISTS `posts` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,

@@ -4,7 +4,7 @@
 - Nombre BD: u178928053_examen_jh
 - Usuario BD: u178928053_jime_hugo */
 
-$conexion= new mysqli("localhost", "u178928053_jime_hugo ", "@1#f7yeS", "u178928053_examen_jh");
+$conexion= new mysqli("localhost", "u178928053_jime_hugo", "@1#f7yeS", "u178928053_examen_jh");
 
 
 $sql = "CREATE TABLE IF NOT EXISTS `users` (
