@@ -1,6 +1,6 @@
-CREATE DATABASE IF NOT EXISTS `mi_examen_db`;
+CREATE DATABASE IF NOT EXISTS `u178928053_examen_jh`;
 
-USE `mi_examen_db`;
+USE `u178928053_examen_jh`;
 
 -- Tabla de Usuarios
 CREATE TABLE IF NOT EXISTS `users` (
